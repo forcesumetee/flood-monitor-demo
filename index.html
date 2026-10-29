@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="โมเดล 3 มิติของสถานีวัดระดับน้ำริมคลองและระบบแจ้งเตือนน้ำท่วม เปรียบเทียบแบบ 4G ต่อจุดกับแบบ LoRaWAN">
 <meta property="og:title" content="สถานีวัดระดับน้ำคลอง 3D">
-<meta property="og:description" content="หมุนดูโมเดลสถานีวัดระดับน้ำ และจำลองระดับน้ำเพื่อดูการแจ้งเตือน">
+<meta property="og:description" content="หมุนดูโมเดลสถานีวัดระดับน้ำ เปิดดูอุปกรณ์ในกล่อง และจำลองระดับน้ำเพื่อดูการแจ้งเตือน">
 <title>สถานีวัดระดับน้ำคลอง 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one working column — 3D viewer first, water-level control under it, parts + cost cards last */
+/* Layout: one working column — 3D viewer first, inside-the-box panel when opened, water-level control, then parts + fit cards */
 :root {
   --bg: #eef2f0; --surface: #ffffff; --fg: #13211f; --muted: #566763; --line: #d4ddda;
-  --accent: #0d6b72; --accent-soft: #d5ebeb; --signal: #c8571f;
+  --accent: #0d6b72; --accent-soft: #d5ebeb; --signal: #c8571f; --on-signal: #ffffff;
   --ok: #2b7f52; --warn: #9a6a08; --danger: #b8352a;
   --ok-soft: #d9eee1; --warn-soft: #f5e7c8; --danger-soft: #f6d9d4;
   --sky: #dbe6e2;
@@ -24,13 +24,13 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1514; --surface: #162120; --fg: #e2ebe8; --muted: #95a7a2; --line: #2a3836;
-  --accent: #5bbfc4; --accent-soft: #163a3c; --signal: #f08a52;
+  --accent: #5bbfc4; --accent-soft: #163a3c; --signal: #f08a52; --on-signal: #1d0f06;
   --ok: #5cc28b; --warn: #e3b04a; --danger: #f07467;
   --ok-soft: #173326; --warn-soft: #3a2e14; --danger-soft: #3f1d1a;
   --sky: #13201f; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0e1514; --surface: #162120; --fg: #e2ebe8; --muted: #95a7a2; --line: #2a3836;
-  --accent: #5bbfc4; --accent-soft: #163a3c; --signal: #f08a52;
+  --accent: #5bbfc4; --accent-soft: #163a3c; --signal: #f08a52; --on-signal: #1d0f06;
   --ok: #5cc28b; --warn: #e3b04a; --danger: #f07467;
   --ok-soft: #173326; --warn-soft: #3a2e14; --danger-soft: #3f1d1a;
   --sky: #13201f; color-scheme: dark; }
@@ -54,15 +54,21 @@ h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: clam
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
 .tools { display: flex; gap: 8px; flex-wrap: wrap; }
 .ghost { font: 500 13px var(--f-body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.ghost.primary { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
 .viewer { position: relative; height: clamp(380px, 62vh, 620px); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--sky); touch-action: none; }
 #scene { display: block; width: 100%; height: 100%; }
 #labels { position: absolute; inset: 0; pointer-events: none; }
-.tag { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 12px; line-height: 1.3; padding: 3px 8px; border-radius: 6px;
+.tag { position: absolute; left: 0; top: 0; white-space: nowrap; font: 400 12px/1.3 var(--f-body); padding: 3px 8px; border-radius: 6px;
   background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
 .tag::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 1px; height: 5px; background: var(--muted); }
 .tag.hot { border-color: var(--danger); color: var(--danger); }
+.tag.btn { pointer-events: auto; cursor: pointer; background: var(--signal); border-color: var(--signal); color: var(--on-signal); font-weight: 500; }
+.tag.num { pointer-events: auto; cursor: pointer; width: 24px; height: 24px; padding: 0; border-radius: 50%; display: grid; place-items: center;
+  font: 500 12px var(--f-mono); background: var(--surface); color: var(--fg); border: 1.5px solid var(--accent); }
+.tag.num::after { display: none; }
+.tag.num.sel { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
 .hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
 
@@ -75,7 +81,23 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--signal); ou
 .phone .msg { font-size: 13px; color: var(--fg); }
 .phone .ex { font-size: 11px; color: var(--muted); }
 
-.water { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.inside { border-color: var(--signal); }
+.inside-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.inside-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.inside-list button { width: 100%; text-align: left; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 10px; align-items: start;
+  background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; font: inherit; }
+.inside-list button[aria-pressed="true"] { border-color: var(--signal); background: var(--accent-soft); }
+.inside-list .n { grid-row: span 2; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font: 500 12px var(--f-mono); border: 1.5px solid var(--accent); }
+.inside-list button[aria-pressed="true"] .n { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
+.inside-list .nm { font-weight: 500; font-size: 14px; }
+.inside-list .ds { font-size: 13px; color: var(--muted); }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.flow span { padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--fg); }
+.flow i { font-style: normal; color: var(--muted); }
+.flow-k { margin: 0; font-size: 12px; color: var(--muted); }
+
+.water { display: grid; gap: 14px; }
 .water label { font-weight: 500; }
 .range-wrap { position: relative; padding-bottom: 22px; }
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; border-radius: 6px; margin: 0;
@@ -97,7 +119,6 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .formula b { font-family: var(--f-mono); font-weight: 500; color: var(--fg); }
 
 .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px; }
 .rows { display: grid; gap: 0; margin: 0; }
 .row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
@@ -110,10 +131,11 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
 .why { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--fg); font-size: 14px; }
 
 @media (max-width: 720px) {
-  .grid { grid-template-columns: minmax(0, 1fr); }
+  .grid, .inside-list { grid-template-columns: minmax(0, 1fr); }
   .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .stat.st { grid-column: 1 / -1; }
   .stat .v { font-size: 18px; }
+  .tag.num { width: 21px; height: 21px; font-size: 11px; }
 }
 </style>
 </head>
@@ -122,7 +144,7 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   <header>
     <p class="eyebrow">ต้นแบบระบบเตือนน้ำท่วม · มุมมอง 3 มิติ</p>
     <h1>สถานีวัดระดับน้ำคลอง</h1>
-    <p class="lede">ลากเพื่อหมุน บีบหรือเลื่อนเมาส์เพื่อซูม เลือกแบบติดตั้ง แล้วปรับระดับน้ำเพื่อดูว่าระบบเริ่มแจ้งเตือนชาวบ้านเมื่อไหร่</p>
+    <p class="lede">ลากเพื่อหมุน บีบหรือเลื่อนเมาส์เพื่อซูม แตะป้ายสีส้มเพื่อดูข้างในอุปกรณ์ แล้วปรับระดับน้ำเพื่อดูว่าระบบเริ่มแจ้งเตือนชาวบ้านเมื่อไหร่</p>
   </header>
 
   <div class="bar">
@@ -131,6 +153,7 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
       <button id="optB" type="button" aria-pressed="false">แบบ B · LoRaWAN</button>
     </div>
     <div class="tools">
+      <button id="insideBtn" class="ghost primary" type="button">เปิดดูในกล่อง IP67</button>
       <button id="labelsBtn" class="ghost" type="button" aria-pressed="true">ซ่อนป้ายชื่อ</button>
       <button id="resetBtn" class="ghost" type="button">มุมมองเริ่มต้น</button>
     </div>
@@ -145,10 +168,21 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
       <div class="msg" id="phoneMsg"></div>
       <div class="ex">ตัวอย่างข้อความแจ้งเตือนบนมือถือ</div>
     </div>
-    <div class="hint">ลากเพื่อหมุน · บีบเพื่อซูม</div>
+    <div class="hint" id="hint">ลากเพื่อหมุน · บีบเพื่อซูม</div>
   </section>
 
-  <section class="water">
+  <section class="card inside" id="inside" hidden aria-live="polite">
+    <div class="inside-head">
+      <h2 id="insTitle"></h2>
+      <button id="insClose" class="ghost" type="button">กลับมุมมองรวม</button>
+    </div>
+    <p class="note" id="insLede"></p>
+    <ol class="inside-list" id="insList"></ol>
+    <p class="flow-k" id="flowK"></p>
+    <div class="flow" id="insFlow"></div>
+  </section>
+
+  <section class="card water">
     <label for="level">ระดับน้ำ (วัดจากก้นคลอง ลึก 3 ม.)</label>
     <div class="range-wrap">
       <input id="level" type="range" min="0.5" max="2.9" step="0.01" value="1.10">
@@ -206,9 +240,61 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
         ['เซ็นเซอร์อัลตราโซนิก LoRaWAN แบตในตัว (ต่อจุด)'],
         ['เสาและขายึด (ต่อจุด)'],
         ['Gateway LoRaWAN รุ่น 4G (ใช้ร่วมทุกจุด)'],
-        ['ไฟสำรองของ gateway']
+        ['ตู้กันน้ำ + ไฟสำรองของ gateway']
       ],
       why: 'เซ็นเซอร์แต่ละจุดเล็กและไม่ต้องใช้โซลาร์ คุ้มเมื่อมีหลายจุดในรัศมีที่ gateway ส่งถึง แต่ถ้า gateway ล่ม ทุกจุดจะเงียบพร้อมกัน'
+    }
+  };
+  const INFO = {
+    boxA: {
+      title: 'ภายในกล่อง IP67 (แบบ A)',
+      lede: 'กล่องขนาดประมาณ 40 × 50 × 20 ซม. อุปกรณ์ทุกตัวเป็นของสำเร็จรูปยึดบนแผ่นรองหลังกล่อง สายลูกลอยต่อเข้าขาอินพุตของตัวส่ง 4G เพื่อเป็นสัญญาณเตือนสำรองแยกจากเรดาร์',
+      flowK: 'เส้นทางไฟและสัญญาณ',
+      flow: ['แผงโซลาร์', 'ตัวควบคุมการชาร์จ', 'แบต LiFePO4', 'เบรกเกอร์ DC', 'ตัวส่ง 4G', 'กันไฟกระชาก RS485', 'เซ็นเซอร์เรดาร์'],
+      items: [
+        ['ตัวส่งข้อมูล 4G (RTU)', 'อ่านค่าเรดาร์ผ่าน RS485 ส่งเข้าเซิร์ฟเวอร์ด้วยซิม 4G และเก็บค่าไว้ส่งย้อนหลังตอนเน็ตหลุด'],
+        ['ตัวควบคุมการชาร์จโซลาร์', 'ชาร์จแบตจากแผงโซลาร์ และตัดไฟเมื่อแบตต่ำเพื่อถนอมแบต'],
+        ['แบต LiFePO4 12V 20Ah', 'จ่ายไฟตอนกลางคืนและวันฝนตก สำรองได้หลายวันแม้ไม่มีแดด ขึ้นกับรอบการส่งข้อมูล'],
+        ['เบรกเกอร์หรือฟิวส์ DC', 'ตัดวงจรเมื่อกระแสเกินหรือสายลัดวงจร'],
+        ['กันไฟกระชาก RS485', 'กันไฟกระชากจากฟ้าผ่าที่วิ่งมาตามสายเซ็นเซอร์ยาวริมน้ำ'],
+        ['กันไฟกระชากฝั่ง DC', 'กันไฟกระชากที่มากับสายจากแผงโซลาร์'],
+        ['เทอร์มินัลต่อสาย', 'จุดต่อสายแบบขันน็อตบนราง DIN ถอดเปลี่ยนอุปกรณ์ได้ง่ายหน้างาน'],
+        ['ซองซิลิกาเจล', 'ดูดความชื้นในกล่อง เปลี่ยนตามรอบบำรุงรักษา'],
+        ['Cable gland + จุกระบายอากาศ', 'ร้อยสายเข้าจากด้านล่างกันน้ำย้อน และปรับความดันไม่ให้ไอน้ำกลั่นตัวในกล่อง'],
+        ['เสาอากาศ 4G', 'ติดนอกกล่องด้านบน รับสัญญาณดีกว่าซ่อนไว้ในกล่อง']
+      ]
+    },
+    sensorB: {
+      title: 'ภายในเซ็นเซอร์แบบ B',
+      lede: 'เซ็นเซอร์สำเร็จรูปปิดผนึกมาจากโรงงาน ไม่ต้องประกอบวงจรหรือเดินสายเอง ปกติจะเปิดฝาเฉพาะตอนเปลี่ยนแบต ภาพนี้เป็นภาพจำลองทั่วไป ตำแหน่งชิ้นส่วนจริงต่างกันไปตามรุ่น',
+      flowK: 'เส้นทางข้อมูล',
+      flow: ['ตัวส่งคลื่นอัลตราโซนิก', 'บอร์ดควบคุม', 'วิทยุ LoRa', 'Gateway', 'เซิร์ฟเวอร์'],
+      items: [
+        ['ตัวส่งคลื่นอัลตราโซนิก', 'ยิงคลื่นเสียงลงผิวน้ำแล้วจับเวลาที่สะท้อนกลับ เพื่อคำนวณระยะ'],
+        ['แบตลิเธียม 19000 mAh', 'แบตขนาดก้อน D ใช้ได้หลายปีตามรอบการส่งข้อมูล และเปลี่ยนก้อนใหม่ได้'],
+        ['บอร์ดควบคุม', 'สั่งวัดตามรอบ กรองค่า และเก็บค่าไว้ส่งซ้ำเมื่อ gateway รับไม่ได้ชั่วคราว'],
+        ['โมดูลวิทยุ LoRaWAN', 'ส่งข้อมูลขนาดเล็กได้ไกลหลายกิโลเมตร ใช้ไฟน้อยมาก'],
+        ['เสาอากาศภายใน', 'ซ่อนอยู่ในตัวเครื่อง ไม่ต้องติดเสาอากาศแยก'],
+        ['ขดลวด NFC', 'ใช้ตั้งค่าเครื่องด้วยการแตะมือถือ ไม่ต้องเปิดฝาหรือต่อสาย'],
+        ['ซีลยางกันน้ำ', 'ขอบยางรอบฝา ทำให้ตัวเครื่องกันน้ำระดับ IP67']
+      ]
+    },
+    gatewayB: {
+      title: 'ภายในตู้ Gateway (แบบ B)',
+      lede: 'ตู้กันน้ำยึดกับเสาข้างอาคาร อบต. รับไฟบ้านจากอาคาร และมีแบตสำรองเพราะไฟมักดับพร้อมน้ำท่วม ถ้าตู้นี้ล่ม เซ็นเซอร์ทุกจุดจะส่งข้อมูลไม่ได้',
+      flowK: 'เส้นทางไฟและข้อมูล',
+      flow: ['ไฟบ้าน 220V', 'พาวเวอร์ซัพพลาย 12V', 'ชุดไฟสำรอง + แบต', 'Gateway', '4G', 'เซิร์ฟเวอร์'],
+      items: [
+        ['Gateway LoRaWAN รุ่น 4G', 'รับสัญญาณจากเซ็นเซอร์ทุกจุด แล้วส่งต่อเข้าเซิร์ฟเวอร์ด้วยซิม 4G'],
+        ['ชุดไฟสำรอง (DC UPS)', 'สลับไปใช้แบตทันทีเมื่อไฟบ้านดับ และชาร์จแบตเมื่อไฟกลับมา'],
+        ['แบตสำรอง 12V 7Ah', 'ให้ gateway ทำงานต่อได้หลายชั่วโมงตอนไฟดับ'],
+        ['พาวเวอร์ซัพพลาย 220V → 12V', 'แปลงไฟบ้านเป็นไฟ DC สำหรับ gateway และชุดสำรอง'],
+        ['เบรกเกอร์ AC', 'ตัดไฟเมื่อกระแสเกินหรือไฟรั่ว'],
+        ['กันไฟกระชากฝั่ง AC', 'ป้องกันไฟกระชากจากสายไฟบ้าน'],
+        ['กันฟ้าผ่าสายเสาอากาศ', 'ต่อคั่นสายนำสัญญาณจากเสาอากาศบนยอดเสา และต่อลงดิน'],
+        ['Cable gland', 'ร้อยสายไฟและสายเสาอากาศเข้าจากด้านล่างกันน้ำย้อน'],
+        ['สายและเสาอากาศ LoRa บนยอดเสา', 'สายนำสัญญาณขึ้นไปตามเสาถึงเสาอากาศไฟเบอร์กลาส ติดให้สูงพ้นหลังคาและต้นไม้ ยิ่งสูงยิ่งรับได้ไกล']
+      ]
     }
   };
   const STATUS = { ok: 'ปกติ', warn: 'เฝ้าระวัง', danger: 'อันตราย' };
@@ -218,6 +304,9 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   let current = 'A';
   let level = 1.10;
   let showLabels = true;
+  let mode = null;        // null or an openable key
+  let selected = -1;
+  const infoKey = k => k && k.indexOf('sensorB') === 0 ? 'sensorB' : k;
 
   function renderPanel() {
     const o = OPT[current];
@@ -228,6 +317,7 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     $('vMount').textContent = o.mount.toFixed(2) + ' ม.';
     $('optA').setAttribute('aria-pressed', current === 'A');
     $('optB').setAttribute('aria-pressed', current === 'B');
+    $('insideBtn').textContent = mode ? 'ปิดฝากล่อง' : (current === 'A' ? 'เปิดดูในกล่อง IP67' : 'เปิดดูในเซ็นเซอร์');
   }
 
   function renderReadout() {
@@ -238,38 +328,51 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     pill.textContent = STATUS[st];
     pill.className = 'pill ' + st;
     const phone = $('phone');
-    if (st === 'ok') { phone.hidden = true; }
-    else {
-      phone.hidden = false;
-      phone.className = 'phone ' + st;
-      $('phoneTitle').textContent = st === 'danger' ? 'ระดับน้ำอันตราย' : 'ระดับน้ำเฝ้าระวัง';
-      $('phoneMsg').textContent = st === 'danger'
-        ? `ระดับน้ำ ${level.toFixed(2)} ม. เกินเกณฑ์อันตราย ขนย้ายของขึ้นที่สูงและเตรียมอพยพ`
-        : `ระดับน้ำ ${level.toFixed(2)} ม. ถึงระดับเฝ้าระวัง โปรดติดตามสถานการณ์ใกล้ชิด`;
-    }
+    if (st === 'ok' || mode) { phone.hidden = true; return; }
+    phone.hidden = false;
+    phone.className = 'phone ' + st;
+    $('phoneTitle').textContent = st === 'danger' ? 'ระดับน้ำอันตราย' : 'ระดับน้ำเฝ้าระวัง';
+    $('phoneMsg').textContent = st === 'danger'
+      ? `ระดับน้ำ ${level.toFixed(2)} ม. เกินเกณฑ์อันตราย ขนย้ายของขึ้นที่สูงและเตรียมอพยพ`
+      : `ระดับน้ำ ${level.toFixed(2)} ม. ถึงระดับเฝ้าระวัง โปรดติดตามสถานการณ์ใกล้ชิด`;
+  }
+
+  function renderInside() {
+    const box = $('inside');
+    if (!mode) { box.hidden = true; return; }
+    const d = INFO[infoKey(mode)];
+    box.hidden = false;
+    $('insTitle').textContent = d.title;
+    $('insLede').textContent = d.lede;
+    $('flowK').textContent = d.flowK;
+    $('insFlow').innerHTML = d.flow.map(s => `<span>${s}</span>`).join('<i aria-hidden="true">→</i>');
+    $('insList').innerHTML = d.items.map((it, i) =>
+      `<li><button type="button" data-i="${i}" aria-pressed="${i === selected}"><span class="n">${i + 1}</span><span class="nm">${it[0]}</span><span class="ds">${it[1]}</span></button></li>`).join('');
   }
 
   renderPanel();
   renderReadout();
 
   const viewer = $('viewer');
+  let api = null;
   function fail(msg) {
     const d = document.createElement('div');
     d.className = 'fallback';
     d.textContent = msg;
     viewer.appendChild(d);
   }
-  if (!window.THREE || !THREE.OrbitControls) { fail('โหลดตัวแสดงผล 3 มิติไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง'); bindUI(null); return; }
+  bindUI();
+  if (!window.THREE || !THREE.OrbitControls) { fail('โหลดตัวแสดงผล 3 มิติไม่สำเร็จ ลองรีเฟรชหน้านี้อีกครั้ง'); return; }
 
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas: $('scene'), antialias: true }); }
-  catch (e) { fail('เบราว์เซอร์นี้แสดงภาพ 3 มิติไม่ได้ ข้อมูลด้านล่างยังใช้ได้ตามปกติ'); bindUI(null); return; }
+  catch (e) { fail('เบราว์เซอร์นี้แสดงภาพ 3 มิติไม่ได้ ข้อมูลด้านล่างยังใช้ได้ตามปกติ'); return; }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 300);
-  const target = new THREE.Vector3(1, 0.3, 0);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.03, 300);
+  const homeTarget = new THREE.Vector3(1, 0.3, 0);
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 7;
@@ -277,14 +380,8 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   controls.maxPolarAngle = Math.PI * 0.49;
   controls.autoRotate = !reduce;
   controls.autoRotateSpeed = 0.45;
-  controls.addEventListener('start', () => { controls.autoRotate = false; });
-
-  function homeView() {
-    const narrow = viewer.clientWidth < 640;
-    camera.position.set(narrow ? 17 : 13, narrow ? 11 : 8.5, narrow ? 22 : 17);
-    controls.target.copy(target);
-    controls.update();
-  }
+  let fly = null;
+  controls.addEventListener('start', () => { controls.autoRotate = false; fly = null; if (!mode) controls.minDistance = 7; });
 
   function applyTheme() {
     const c = getComputedStyle(document.documentElement).getPropertyValue('--sky').trim() || '#dbe6e2';
@@ -300,6 +397,8 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   const sun = new THREE.DirectionalLight(0xffffff, 0.75);
   sun.position.set(8, 16, 10);
   scene.add(sun);
+  const fill = new THREE.PointLight(0xffffff, 0, 3);
+  scene.add(fill);
 
   const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.85, metalness: 0.05 }, o || {}));
   const mat = {
@@ -308,7 +407,10 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     box: M(0xeceae4, { roughness: 0.6 }), panel: M(0x1d3a66, { metalness: 0.35, roughness: 0.35 }),
     wall: M(0xd8d1c1), roof: M(0x9e4a31), glass: M(0x3b5361, { roughness: 0.3 }),
     ok: M(0x3d9b6a), warn: M(0xe0a42a), danger: M(0xd2463a), white: M(0xf6f5f1),
-    float: M(0xe0782d, { emissive: 0x000000 })
+    float: M(0xe0782d), plate: M(0xd6cfbf), rail: M(0xb8bec2, { metalness: 0.6, roughness: 0.35 }),
+    red: M(0xc8372d), black: M(0x1b1d1f), gasket: M(0x3a3d40), blue: M(0x3d6fb0),
+    pcb: M(0x1f6b45, { roughness: 0.5 }), chip: M(0x15171a, { roughness: 0.4 }), shield: M(0xc9ced2, { metalness: 0.7, roughness: 0.3 }),
+    copper: M(0xb87333, { metalness: 0.7, roughness: 0.35 }), brass: M(0xc9a54a, { metalness: 0.7, roughness: 0.35 })
   };
 
   function box(w, h, d, m, x, y, z, parent) {
@@ -321,14 +423,34 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   }
   function rod(a, b, r, m, parent) {
     const len = a.distanceTo(b);
-    const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 12), m);
+    const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 10), m);
     o.position.copy(a).add(b).multiplyScalar(0.5);
     o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
     (parent || scene).add(o); return o;
   }
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  function own(meshes) { meshes.forEach(m => { m.material = m.material.clone(); }); return meshes; }
 
-  // Canal and banks
+  // Hollow enclosure with a door hinged on its left edge; door faces +z
+  function cabinet(parent, x, y, z, W, H, D, T, shellMat) {
+    const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+    const shell = [
+      box(W, H, T, shellMat, 0, 0, -D / 2 + T / 2, g),
+      box(W, T, D, shellMat, 0, H / 2 - T / 2, 0, g),
+      box(W, T, D, shellMat, 0, -H / 2 + T / 2, 0, g),
+      box(T, H, D, shellMat, -W / 2 + T / 2, 0, 0, g),
+      box(T, H, D, shellMat, W / 2 - T / 2, 0, 0, g)
+    ];
+    const hinge = new THREE.Group(); hinge.position.set(-W / 2, 0, D / 2); g.add(hinge);
+    const door = box(W, H, T, shellMat, W / 2, 0, T / 2, hinge);
+    const gasket = box(W - 2 * T, H - 2 * T, 0.003, mat.gasket, W / 2, 0, -0.0015, hinge);
+    return { g, hinge, click: shell.concat([door]), gasket, backZ: -D / 2 + T, W, H, D };
+  }
+
+  // Openable registry: key -> { opt, cab, parts: [{meshes, at}], cam, camNarrow, doorOpen }
+  const openables = {};
+
+  // ---------- Canal and banks ----------
   box(9, 3.5, 30, mat.soil, -7.5, -1.75, 0);
   box(9, 0.08, 30, mat.grass, -7.5, 0.04, 0);
   box(9, 3.5, 30, mat.soil, 7.5, -1.75, 0);
@@ -340,7 +462,6 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     box(0.02, 0.06, 30, m, -2.84, BED + h, 0);
     box(0.02, 0.06, 30, m, 2.84, BED + h, 0);
   });
-  // Staff gauge on left wall
   box(0.03, 3, 0.24, mat.white, -2.835, -1.5, 2.4);
   box(0.04, WARN, 0.16, mat.ok, -2.82, BED + WARN / 2, 2.4);
   box(0.04, DANGER - WARN, 0.16, mat.warn, -2.82, BED + (WARN + DANGER) / 2, 2.4);
@@ -376,7 +497,7 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     packets.push({ curve, meshes, parent, speed });
   }
 
-  // Option A: self-contained 4G pole
+  // ---------- Option A ----------
   const gA = new THREE.Group(); scene.add(gA);
   const ax = -4.6;
   box(0.9, 0.35, 0.9, mat.concrete, ax, 0.175, 0, gA);
@@ -386,9 +507,6 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   box(1.5, 0.05, 1.0, mat.panel, 0, 0, 0, panel);
   box(1.54, 0.03, 0.04, mat.steel, 0, 0.02, 0.5, panel);
   box(1.54, 0.03, 0.04, mat.steel, 0, 0.02, -0.5, panel);
-  box(0.55, 0.7, 0.32, mat.box, ax, 2.4, 0.26, gA);
-  box(0.4, 0.04, 0.02, mat.steel, ax, 2.15, 0.43, gA);
-  cyl(0.02, 0.03, 0.55, mat.dark, ax + 0.18, 3.02, 0.26, gA);
   box(3.1, 0.1, 0.1, mat.steel, (ax - 1.5) / 2, 3.7, 0, gA);
   rod(V(ax, 3.0, 0), V(-3.3, 3.7, 0), 0.03, mat.steel, gA);
   cyl(0.14, 0.14, 0.26, mat.dark, -1.5, 3.52, 0, gA);
@@ -396,29 +514,164 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   box(0.25, 0.04, 0.04, mat.steel, -2.72, BED + DANGER, -2, gA);
   const floatBall = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), mat.float);
   floatBall.position.set(-2.55, BED + DANGER, -2); gA.add(floatBall);
-  signal(new THREE.LineCurve3(V(ax + 0.18, 3.35, 0.26), V(ax + 0.18, 9.4, 0.26)), 0xc8571f, gA, 0.45, 2);
 
-  // Option B: LoRaWAN sensors + shared gateway
+  {
+    const c = cabinet(gA, ax, 2.4, 0.3, 0.5, 0.65, 0.26, 0.012, mat.box);
+    const g = c.g, H = c.H;
+    box(0.32, 0.04, 0.12, mat.steel, 0, 0.2, -0.19, g);
+    box(0.32, 0.04, 0.12, mat.steel, 0, -0.2, -0.19, g);
+    box(0.02, 0.07, 0.025, mat.dark, c.W - 0.03, 0, 0.024, c.hinge);
+    box(0.46, 0.6, 0.006, mat.plate, 0, 0, c.backZ + 0.003, g);
+    const pz = c.backZ + 0.006;
+    box(0.42, 0.035, 0.008, mat.rail, 0, 0.2, pz + 0.004, g);
+    box(0.42, 0.035, 0.008, mat.rail, 0, 0.05, pz + 0.004, g);
+    const parts = [];
+    const rtu = box(0.15, 0.11, 0.06, M(0x2d3135, { roughness: 0.5 }), -0.11, 0.2, pz + 0.038, g);
+    box(0.11, 0.02, 0.002, mat.white, -0.11, 0.23, pz + 0.069, g);
+    box(0.008, 0.008, 0.003, M(0x3fd47a, { emissive: 0x1b8a44 }), -0.16, 0.18, pz + 0.069, g);
+    parts.push({ meshes: [rtu], at: V(-0.11, 0.2, pz + 0.07) });
+    const ctl = box(0.13, 0.1, 0.035, M(0x2a6db0, { roughness: 0.55 }), 0.1, 0.2, pz + 0.0175, g);
+    box(0.05, 0.025, 0.002, M(0x0e1a24, { emissive: 0x0b2a3a }), 0.1, 0.215, pz + 0.036, g);
+    parts.push({ meshes: [ctl], at: V(0.1, 0.2, pz + 0.037) });
+    const bat = box(0.24, 0.15, 0.11, M(0x24486e, { roughness: 0.6 }), -0.08, -0.17, pz + 0.055, g);
+    cyl(0.009, 0.009, 0.015, mat.red, -0.15, -0.09, pz + 0.055, g);
+    cyl(0.009, 0.009, 0.015, mat.black, -0.01, -0.09, pz + 0.055, g);
+    parts.push({ meshes: [bat], at: V(-0.08, -0.17, pz + 0.111) });
+    const brk = box(0.036, 0.08, 0.06, mat.white, 0.03, 0.05, pz + 0.038, g);
+    box(0.012, 0.018, 0.012, mat.dark, 0.03, 0.06, pz + 0.072, g);
+    parts.push({ meshes: [brk], at: V(0.03, 0.05, pz + 0.07) });
+    parts.push({ meshes: [box(0.024, 0.08, 0.06, M(0x5f7366), 0.09, 0.05, pz + 0.038, g)], at: V(0.09, 0.05, pz + 0.07) });
+    const spd2 = box(0.036, 0.08, 0.06, M(0x9aa09c), 0.15, 0.05, pz + 0.038, g);
+    box(0.016, 0.012, 0.003, M(0x3fd47a, { emissive: 0x1b8a44 }), 0.15, 0.065, pz + 0.069, g);
+    parts.push({ meshes: [spd2], at: V(0.15, 0.05, pz + 0.07) });
+    const tb = [];
+    for (let i = 0; i < 8; i++) tb.push(box(0.012, 0.05, 0.04, i % 4 === 3 ? mat.blue : M(0x8a8f94), -0.2 + i * 0.016, 0.05, pz + 0.028, g));
+    parts.push({ meshes: tb, at: V(-0.144, 0.05, pz + 0.05) });
+    parts.push({ meshes: [box(0.06, 0.08, 0.015, mat.white, 0.15, -0.2, pz + 0.0075, g)], at: V(0.15, -0.2, pz + 0.016) });
+    const gl = [-0.12, -0.04, 0.04].map(x => cyl(0.018, 0.018, 0.04, mat.dark, x, -H / 2 - 0.02, 0, g));
+    gl.push(cyl(0.022, 0.022, 0.025, M(0x6d7378), 0.15, -H / 2 - 0.013, 0, g));
+    parts.push({ meshes: gl, at: V(-0.04, -H / 2 - 0.05, 0) });
+    parts.push({ meshes: [cyl(0.02, 0.03, 0.55, mat.dark, 0.15, H / 2 + 0.275, 0, g)], at: V(0.15, H / 2 + 0.1, 0) });
+    const wz = pz + 0.045;
+    rod(V(0.08, 0.15, wz), V(-0.15, -0.085, wz), 0.004, mat.red, g);
+    rod(V(0.12, 0.15, wz), V(-0.01, -0.085, wz), 0.004, mat.black, g);
+    rod(V(0.03, 0.01, wz), V(-0.06, 0.145, wz), 0.003, mat.red, g);
+    rod(V(0.09, 0.01, wz), V(-0.04, -0.3, wz), 0.003, mat.blue, g);
+    rod(V(0.15, 0.01, wz), V(0.04, -0.3, wz), 0.003, mat.red, g);
+    openables.boxA = { opt: 'A', cab: c, parts, cam: V(0.45, 0.25, 1.35), camNarrow: V(0.3, 0.2, 1.15), doorOpen: -1.85, antLocal: V(0.15, H / 2 + 0.55, 0) };
+  }
+
+  // ---------- Option B ----------
   const gB = new THREE.Group(); scene.add(gB);
   const bx = -4.2, stations = [-6, 5];
-  stations.forEach(z => {
+  stations.forEach((z, si) => {
     box(0.7, 0.3, 0.7, mat.concrete, bx, 0.15, z, gB);
     cyl(0.07, 0.08, 4.0, mat.steel, bx, 2.3, z, gB);
     box(2.5, 0.09, 0.09, mat.steel, (bx - 1.7) / 2, 3.1, z, gB);
     rod(V(bx, 2.5, z), V(-3.1, 3.1, z), 0.025, mat.steel, gB);
-    box(0.22, 0.45, 0.22, mat.box, -1.7, 2.82, z, gB);
-    cyl(0.07, 0.07, 0.04, mat.dark, -1.7, 2.58, z, gB);
     beam(-1.7, OPT.B.sensY, z, 0.55, gB);
+    const c = cabinet(gB, -1.7, 2.82, z, 0.22, 0.45, 0.22, 0.008, mat.box);
+    const g = c.g, H = c.H, bz = c.backZ;
+    box(0.06, 0.025, 0.05, mat.steel, 0, H / 2 + 0.0125, 0, g);
+    const parts = [];
+    // 1 ultrasonic transducer through the floor
+    const tr1 = cyl(0.06, 0.06, 0.06, mat.dark, 0, -H / 2 + 0.035, 0, g);
+    const tr2 = cyl(0.07, 0.07, 0.04, mat.dark, 0, -H / 2 - 0.02, 0, g);
+    parts.push({ meshes: [tr1, tr2], at: V(0, -H / 2 + 0.035, 0.065) });
+    // 2 battery (D-size) in a holder
+    box(0.08, 0.16, 0.02, mat.dark, -0.05, -0.04, bz + 0.01, g);
+    const bat = cyl(0.033, 0.033, 0.14, M(0x2f6aa8, { roughness: 0.45, metalness: 0.2 }), -0.05, -0.04, bz + 0.055, g);
+    cyl(0.01, 0.01, 0.006, mat.shield, -0.05, 0.033, bz + 0.055, g);
+    parts.push({ meshes: [bat], at: V(-0.05, -0.04, bz + 0.09) });
+    // 3 control board
+    const pcb = box(0.1, 0.16, 0.004, mat.pcb, 0.045, 0.08, bz + 0.012, g);
+    box(0.02, 0.02, 0.004, mat.chip, 0.03, 0.06, bz + 0.016, g);
+    box(0.012, 0.025, 0.004, mat.chip, 0.07, 0.03, bz + 0.016, g);
+    parts.push({ meshes: [pcb], at: V(0.03, 0.04, bz + 0.02) });
+    // 4 LoRa module (shield can)
+    const lora = box(0.035, 0.03, 0.006, mat.shield, 0.055, 0.115, bz + 0.017, g);
+    parts.push({ meshes: [lora], at: V(0.055, 0.115, bz + 0.022) });
+    // 5 internal antenna (spring)
+    const antM = [];
+    for (let i = 0; i < 6; i++) {
+      const t = new THREE.Mesh(new THREE.TorusGeometry(0.006, 0.0012, 6, 16), mat.copper);
+      t.rotation.x = Math.PI / 2; t.position.set(0.08, 0.17 + i * 0.006, bz + 0.02); g.add(t); antM.push(t);
+    }
+    parts.push({ meshes: antM, at: V(0.08, 0.2, bz + 0.03) });
+    // 6 NFC coil on the inside of the lid
+    const nfc = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.0025, 6, 28), mat.copper);
+    nfc.position.set(c.W / 2, 0.12, -0.006); c.hinge.add(nfc);
+    parts.push({ meshes: [nfc], at: V(c.W / 2, 0.12, -0.012), onDoor: true });
+    // 7 gasket
+    parts.push({ meshes: [c.gasket], at: V(c.W / 2, -0.15, -0.006), onDoor: true });
+    // wires
+    rod(V(-0.05, 0.04, bz + 0.03), V(0.0, 0.08, bz + 0.016), 0.0018, mat.red, g);
+    rod(V(0.0, -H / 2 + 0.07, 0.0), V(0.03, 0.0, bz + 0.016), 0.0018, mat.black, g);
+    openables['sensorB' + si] = { opt: 'B', cab: c, parts, cam: V(0.22, 0.12, 0.72), camNarrow: V(0.16, 0.1, 0.68), doorOpen: -1.9 };
   });
-  box(4, 2.8, 3.6, mat.wall, 7.5, 1.4, -1, gB);
+
+  // Building and gateway cabinet on a mast beside it
+  const bldg = box(4, 2.8, 3.6, mat.wall, 7.5, 1.4, -1, gB);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(3.0, 1.1, 4), mat.roof);
   roof.position.set(7.5, 3.35, -1); roof.rotation.y = Math.PI / 4; gB.add(roof);
   box(0.04, 1.6, 0.9, mat.dark, 5.48, 0.8, -1.9, gB);
   box(0.04, 0.7, 0.9, mat.glass, 5.48, 1.7, -0.2, gB);
-  box(0.25, 0.6, 0.45, mat.dark, 5.38, 1.0, 0.75, gB);
-  cyl(0.045, 0.05, 6.2, mat.steel, 5.2, 3.1, 1.35, gB);
-  box(0.34, 0.4, 0.16, mat.box, 5.2, 4.6, 1.5, gB);
-  cyl(0.025, 0.035, 1.3, mat.white, 5.2, 6.85, 1.35, gB);
+  const mast = cyl(0.045, 0.05, 6.2, mat.steel, 5.2, 3.1, 1.35, gB);
+  const gwAntTop = cyl(0.025, 0.035, 1.3, mat.white, 5.2, 6.85, 1.35, gB);
+  rod(V(5.5, 2.3, 0.75), V(5.3, 2.3, 1.48), 0.012, mat.dark, gB);
+  {
+    const c = cabinet(gB, 5.2, 2.2, 1.6, 0.45, 0.55, 0.22, 0.012, mat.box);
+    const g = c.g, H = c.H;
+    box(0.02, 0.06, 0.022, mat.dark, c.W - 0.03, 0, 0.022, c.hinge);
+    box(0.25, 0.04, 0.14, mat.steel, 0, 0.15, -0.17, g);
+    box(0.25, 0.04, 0.14, mat.steel, 0, -0.15, -0.17, g);
+    box(0.41, 0.5, 0.006, mat.plate, 0, 0, c.backZ + 0.003, g);
+    const pz = c.backZ + 0.006;
+    box(0.38, 0.03, 0.008, mat.rail, 0, -0.01, pz + 0.004, g);
+    const parts = [];
+    const gwm = box(0.18, 0.14, 0.05, mat.white, -0.08, 0.14, pz + 0.025, g);
+    box(0.12, 0.012, 0.002, mat.blue, -0.08, 0.17, pz + 0.051, g);
+    box(0.006, 0.006, 0.003, M(0x3fd47a, { emissive: 0x1b8a44 }), -0.15, 0.1, pz + 0.051, g);
+    parts.push({ meshes: [gwm], at: V(-0.08, 0.14, pz + 0.052) });
+    const ups = box(0.1, 0.08, 0.04, M(0x3b4045), 0.12, 0.16, pz + 0.02, g);
+    parts.push({ meshes: [ups], at: V(0.12, 0.16, pz + 0.042) });
+    const bat = box(0.15, 0.095, 0.065, mat.black, -0.08, -0.16, pz + 0.0325, g);
+    cyl(0.006, 0.006, 0.01, mat.red, -0.13, -0.108, pz + 0.0325, g);
+    parts.push({ meshes: [bat], at: V(-0.08, -0.16, pz + 0.067) });
+    const psu = box(0.1, 0.06, 0.035, mat.shield, 0.12, 0.06, pz + 0.0175, g);
+    parts.push({ meshes: [psu], at: V(0.12, 0.06, pz + 0.037) });
+    const brk = box(0.036, 0.07, 0.055, mat.white, -0.15, -0.01, pz + 0.035, g);
+    parts.push({ meshes: [brk], at: V(-0.15, -0.01, pz + 0.064) });
+    const spd = box(0.036, 0.07, 0.055, M(0x9aa09c), -0.1, -0.01, pz + 0.035, g);
+    parts.push({ meshes: [spd], at: V(-0.1, -0.01, pz + 0.064) });
+    const arr = cyl(0.014, 0.014, 0.07, mat.brass, 0.12, -0.15, pz + 0.03, g);
+    parts.push({ meshes: [arr], at: V(0.12, -0.15, pz + 0.05) });
+    const gl = [-0.12, 0, 0.12].map(x => cyl(0.016, 0.016, 0.035, mat.dark, x, -H / 2 - 0.0175, 0, g));
+    parts.push({ meshes: gl, at: V(0, -H / 2 - 0.045, 0) });
+    parts.push({ meshes: [gwAntTop], at: V(0, H / 2 + 0.14, -0.22) });
+    const wz = pz + 0.05;
+    rod(V(0.12, 0.03, wz), V(0.12, 0.13, wz), 0.003, mat.red, g);
+    rod(V(0.08, 0.16, wz), V(0.0, 0.16, wz), 0.003, mat.red, g);
+    rod(V(0.1, 0.12, wz), V(-0.05, -0.12, wz), 0.003, mat.black, g);
+    rod(V(0.12, -0.115, wz), V(-0.02, 0.07, wz), 0.0035, mat.dark, g);
+    rod(V(0.12, -0.185, wz), V(0.12, -H / 2 + 0.01, wz - 0.02), 0.0035, mat.dark, g);
+    rod(V(0, H / 2, 0), V(0, 4.0, -0.25), 0.006, mat.dark, g);
+    openables.gatewayB = { opt: 'B', cab: c, parts, cam: V(0.5, 0.25, 1.25), camNarrow: V(0.35, 0.2, 1.15), doorOpen: -1.85 };
+  }
+
+  // World matrices must be current before converting local positions to world space
+  scene.updateMatrixWorld(true);
+  Object.keys(openables).forEach(k => {
+    const o = openables[k];
+    o.parts.forEach(p => {
+      if (p.onDoor) { p.world = null; }
+      else { p.world = o.cab.g.localToWorld(p.at.clone()); }
+      p.meshes = own(p.meshes);
+    });
+    o.center = o.cab.g.localToWorld(V(0, 0, 0));
+  });
+  const antTopA = openables.boxA.cab.g.localToWorld(openables.boxA.antLocal.clone());
+  signal(new THREE.LineCurve3(antTopA.clone(), V(antTopA.x, 9.4, antTopA.z)), 0xc8571f, gA, 0.45, 2);
   const G = V(5.2, 7.4, 1.35);
   stations.forEach((z, i) => {
     const a = V(-1.7, 3.15, z);
@@ -427,30 +680,103 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   });
   signal(new THREE.LineCurve3(V(5.2, 7.6, 1.35), V(5.2, 11.2, 1.35)), 0xc8571f, gB, 0.45, 2);
 
-  // Labels
+  // ---------- Labels ----------
   const labelsEl = $('labels');
   const labels = [];
-  function label(text, pos, group, hotWhenDanger) {
-    const el = document.createElement('div');
-    el.className = 'tag'; el.textContent = text;
+  function label(text, pos, group, opts) {
+    opts = opts || {};
+    const el = document.createElement(opts.onClick ? 'button' : 'div');
+    el.className = 'tag' + (opts.cls ? ' ' + opts.cls : '');
+    el.textContent = text;
+    if (opts.onClick) { el.type = 'button'; el.addEventListener('click', opts.onClick); }
+    if (opts.aria) el.setAttribute('aria-label', opts.aria);
     labelsEl.appendChild(el);
-    labels.push({ el, pos, group, hot: !!hotWhenDanger });
+    const rec = { el, pos, group, hot: !!opts.hot, part: opts.part };
+    labels.push(rec);
+    return rec;
   }
+  const cA = openables.boxA.center, cG = openables.gatewayB.center;
   label('แผงโซลาร์', V(ax, 6.15, -0.05), 'A');
-  label('กล่อง IP67 · ตัวส่ง 4G + แบต', V(ax + 0.3, 2.85, 0.3), 'A');
+  label('กล่อง IP67 · แตะดูข้างใน', V(cA.x + 0.3, cA.y + 0.42, cA.z + 0.1), 'A', { cls: 'btn', onClick: () => openInfo('boxA') });
   label('เรดาร์วัดระดับน้ำ', V(-1.5, 3.95, 0), 'A');
-  label('ลูกลอยสำรอง', V(-2.55, BED + DANGER + 0.22, -2), 'A', true);
-  label('ส่ง 4G เข้าเซิร์ฟเวอร์', V(ax + 0.18, 9.7, 0.26), 'A');
-  label('จุดวัด 1 · อัลตราโซนิก', V(-1.7, 3.45, -6), 'B');
-  label('จุดวัด 2', V(-1.7, 3.45, 5), 'B');
-  label('Gateway LoRaWAN', V(5.2, 7.75, 1.35), 'B');
-  label('ไฟสำรอง', V(5.38, 1.45, 0.75), 'B');
+  label('ลูกลอยสำรอง', V(-2.55, BED + DANGER + 0.22, -2), 'A', { hot: true });
+  label('ส่ง 4G เข้าเซิร์ฟเวอร์', V(antTopA.x, 9.7, antTopA.z), 'A');
+  label('จุดวัด 1 · แตะดูข้างใน', V(-1.7, 3.5, -6), 'B', { cls: 'btn', onClick: () => openInfo('sensorB0') });
+  label('จุดวัด 2 · แตะดูข้างใน', V(-1.7, 3.5, 5), 'B', { cls: 'btn', onClick: () => openInfo('sensorB1') });
+  label('ตู้ Gateway · แตะดูข้างใน', V(cG.x, cG.y + 0.45, cG.z + 0.1), 'B', { cls: 'btn', onClick: () => openInfo('gatewayB') });
+  label('เสาอากาศ LoRa', V(5.2, 7.75, 1.35), 'B');
   label('อาคาร อบต.', V(7.5, 4.15, -1), 'B');
   label('ส่ง 4G เข้าเซิร์ฟเวอร์', V(5.2, 11.5, 1.35), 'B');
   label('ไม้วัดระดับน้ำ', V(-2.8, 0.35, 2.4), 'C');
-  label('เส้นอันตราย 2.2 ม.', V(2.84, BED + DANGER + 0.15, 9), 'C', true);
+  label('เส้นอันตราย 2.2 ม.', V(2.84, BED + DANGER + 0.15, 9), 'C', { hot: true });
+  Object.keys(openables).forEach(k => {
+    const items = INFO[infoKey(k)].items;
+    openables[k].nums = openables[k].parts.map((p, i) => label(String(i + 1), V(), 'I:' + k,
+      { cls: 'num', aria: items[i][0], onClick: () => select(i), part: p }));
+  });
+
+  // ---------- Modes ----------
+  let doorTargets = {};
+  function easeTo(pos, tgt, dur) {
+    if (reduce) { camera.position.copy(pos); controls.target.copy(tgt); controls.update(); return; }
+    fly = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, start: performance.now(), dur: dur || 900 };
+  }
+  function homePos() {
+    const narrow = viewer.clientWidth < 640;
+    return V(narrow ? 17 : 13, narrow ? 11 : 8.5, narrow ? 22 : 17);
+  }
+  function homeView(animate) {
+    controls.minDistance = animate ? 0.25 : 7;
+    if (animate) easeTo(homePos(), homeTarget.clone(), 1000);
+    else { camera.position.copy(homePos()); controls.target.copy(homeTarget); controls.update(); }
+  }
+
+  function clearHighlight() {
+    Object.keys(openables).forEach(k => openables[k].parts.forEach(p => p.meshes.forEach(m => m.material.emissive && m.material.emissive.setHex(0))));
+  }
+  function select(i) {
+    selected = i;
+    clearHighlight();
+    const o = mode && openables[mode];
+    if (o) {
+      o.nums.forEach((l, k) => l.el.classList.toggle('sel', k === i));
+      if (o.parts[i]) o.parts[i].meshes.forEach(m => m.material.emissive.setHex(0x6a2a08));
+    }
+    $('insList').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.i) === i));
+  }
+
+  function openInfo(key) {
+    const o = openables[key];
+    if (!o) return;
+    if (mode && mode !== key) closeDoor(mode);
+    if (current !== o.opt) setOption(o.opt);
+    mode = key;
+    selected = -1;
+    controls.autoRotate = false;
+    renderInside(); renderPanel(); renderReadout();
+    select(-1);
+    doorTargets[key] = o.doorOpen;
+    controls.minDistance = 0.25;
+    fill.intensity = 0.9;
+    fill.position.copy(o.center).add(V(0.2, 0.3, 0.6));
+    const narrow = viewer.clientWidth < 640;
+    easeTo(o.center.clone().add(narrow ? o.camNarrow : o.cam), o.center.clone(), 1000);
+    $('hint').textContent = 'แตะหมายเลขเพื่อดูว่าชิ้นส่วนทำหน้าที่อะไร';
+  }
+  function closeDoor(key) { doorTargets[key] = 0; }
+  function closeInfo() {
+    if (!mode) return;
+    closeDoor(mode);
+    mode = null; selected = -1;
+    clearHighlight();
+    fill.intensity = 0;
+    renderInside(); renderPanel(); renderReadout();
+    $('hint').textContent = 'ลากเพื่อหมุน · บีบเพื่อซูม';
+    homeView(true);
+  }
 
   function setOption(k) {
+    if (mode && openables[mode].opt !== k) closeInfo();
     current = k;
     gA.visible = k === 'A';
     gB.visible = k === 'B';
@@ -464,6 +790,38 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
     labels.forEach(l => l.el.classList.toggle('hot', l.hot && st === 'danger'));
   }
 
+  // ---------- Picking ----------
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const pickables = Object.keys(openables).map(k => ({ meshes: openables[k].cab.click, kind: k, group: openables[k].opt === 'A' ? gA : gB }));
+  pickables.push({ meshes: [bldg, mast], kind: 'gatewayB', group: gB });
+  function pick(ev) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    let best = null;
+    pickables.forEach(p => {
+      if (!p.group.visible) return;
+      const hit = ray.intersectObjects(p.meshes, false)[0];
+      if (hit && (!best || hit.distance < best.d)) best = { d: hit.distance, kind: p.kind };
+    });
+    return best && best.kind;
+  }
+  let down = null;
+  renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+  renderer.domElement.addEventListener('pointerup', e => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    down = null;
+    if (moved > 6) return;
+    const k = pick(e);
+    if (k && k !== mode) openInfo(k);
+  });
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (e.buttons || e.pointerType !== 'mouse') return;
+    renderer.domElement.style.cursor = pick(e) ? 'pointer' : '';
+  });
+
   function resize() {
     const w = viewer.clientWidth, h = viewer.clientHeight;
     renderer.setSize(w, h, false);
@@ -472,30 +830,37 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
   }
   new ResizeObserver(resize).observe(viewer);
   resize();
-  homeView();
+  homeView(false);
 
   const proj = new THREE.Vector3();
   function updateLabels() {
     const w = viewer.clientWidth, h = viewer.clientHeight;
     labels.forEach(l => {
-      const visible = showLabels && (l.group === 'C' || l.group === current);
+      let visible;
+      if (mode) visible = l.group === 'I:' + mode;
+      else visible = showLabels && (l.group === 'C' || l.group === current);
       if (!visible) { l.el.hidden = true; return; }
-      proj.copy(l.pos).project(camera);
+      if (l.part) {
+        if (l.part.onDoor) { l.part.meshes[0].parent.localToWorld(proj.copy(l.part.at)); }
+        else proj.copy(l.part.world);
+      } else proj.copy(l.pos);
+      proj.project(camera);
       if (proj.z > 1 || proj.z < -1) { l.el.hidden = true; return; }
       l.el.hidden = false;
-      const x = (proj.x + 1) / 2 * w, y = (1 - proj.y) / 2 * h - 6;
-      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+      const isNum = !!l.part;
+      const x = (proj.x + 1) / 2 * w, y = (1 - proj.y) / 2 * h + (isNum ? 0 : -6);
+      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, ${isNum ? '-50%' : '-100%'})`;
     });
   }
 
-  const t0 = performance.now();
+  const tStart = performance.now();
   function frame(now) {
-    const t = (now - t0) / 1000;
+    const t = (now - tStart) / 1000;
     const bob = reduce ? 0 : Math.sin(t * 1.3) * 0.015;
-    const l = level + bob;
-    water.scale.y = l;
-    water.position.y = BED + l / 2;
-    const top = BED + l;
+    const lv = level + bob;
+    water.scale.y = lv;
+    water.position.y = BED + lv / 2;
+    const top = BED + lv;
     beams.forEach(b => { b.mesh.scale.y = Math.max(0.05, b.y - top); });
     packets.forEach(p => {
       if (!p.parent.visible) return;
@@ -504,17 +869,28 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
         m.position.copy(p.curve.getPoint(u));
       });
     });
+    Object.keys(openables).forEach(k => {
+      const hg = openables[k].cab.hinge, tgt = doorTargets[k] || 0;
+      hg.rotation.y += reduce ? (tgt - hg.rotation.y) : (tgt - hg.rotation.y) * 0.12;
+    });
+    if (fly) {
+      const k = Math.min(1, (now - fly.start) / fly.dur);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(fly.p0, fly.p1, e);
+      controls.target.lerpVectors(fly.t0, fly.t1, e);
+      if (k >= 1) { fly = null; if (!mode) controls.minDistance = 7; }
+    }
     controls.update();
     renderer.render(scene, camera);
     updateLabels();
     requestAnimationFrame(frame);
   }
 
-  bindUI({ setOption, applyStatus, homeView });
+  api = { setOption, applyStatus, homeView, openInfo, closeInfo, select };
   setOption('A');
   requestAnimationFrame(frame);
 
-  function bindUI(api) {
+  function bindUI() {
     $('level').addEventListener('input', e => {
       level = parseFloat(e.target.value);
       renderReadout();
@@ -527,7 +903,20 @@ h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 18px
       e.currentTarget.setAttribute('aria-pressed', showLabels);
       e.currentTarget.textContent = showLabels ? 'ซ่อนป้ายชื่อ' : 'แสดงป้ายชื่อ';
     });
-    $('resetBtn').addEventListener('click', () => { if (api) api.homeView(); });
+    $('resetBtn').addEventListener('click', () => { if (!api) return; if (mode) api.closeInfo(); else api.homeView(true); });
+    $('insideBtn').addEventListener('click', () => {
+      const key = current === 'A' ? 'boxA' : 'sensorB0';
+      if (api) { mode ? api.closeInfo() : api.openInfo(key); }
+      else { mode = mode ? null : key; renderInside(); renderPanel(); }
+    });
+    $('insClose').addEventListener('click', () => { if (api) api.closeInfo(); else { mode = null; renderInside(); renderPanel(); } });
+    $('insList').addEventListener('click', e => {
+      const b = e.target.closest('button[data-i]');
+      if (!b) return;
+      const i = Number(b.dataset.i);
+      if (api) api.select(i === selected ? -1 : i);
+      else { selected = i; renderInside(); }
+    });
   }
 })();
 </script>
